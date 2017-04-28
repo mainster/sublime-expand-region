@@ -87,9 +87,12 @@ class ExpandRegionCommand(sublime_plugin.TextCommand):
 
 				# On first expansion, strip trailing [\s\t]
 				for l in view.split_by_newlines(treg):
-					sfreg = sublime.Region(l.begin(), 
-						l.end() - len(re.findall('[\s\t]+$', view.substr(l))[0]))
-					new_regions.append(sfreg)
+					try:
+						new_regions.append(sublime.Region(l.begin(), 
+							l.end() - len(re.findall('[\s\t]+$', view.substr(l))[0]))
+						)
+					except:
+						new_regions.append(l)
 
 			# Compare if current selection is equal to new_regions.
 			# If true, this is the second hit of expand_to_eol! -> do NOT strip whitespaces
