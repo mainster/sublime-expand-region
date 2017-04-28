@@ -1,4 +1,4 @@
-import sublime, sublime_plugin, os
+import sublime, sublime_plugin, os, re
 
 try:
 	import expand_region_handler
@@ -73,38 +73,46 @@ class ExpandRegionCommand(sublime_plugin.TextCommand):
 
 		if 'expand_line' in mdargs:
 			[new_regions.append(view.line(reg)) for reg in view.sel()]
-			FWD = int('forward' in mdargs)
-			
+
 			# If equal region, expand to next/prev line
 			for k in range(len(new_regions)):
 				if view.sel()[k] == new_regions[k]:
 					new_regions[k] = view.line(sublime.Region(
-						new_regions[k].begin() - int('backward' in mdargs), 
+						new_regions[k].begin() - int('backward' in mdargs),
 						new_regions[k].end()+ int('forward' in mdargs)))
 
-			view.sel().clear()
-			[view.sel().add(reg) for reg in new_regions]
+		elif 'expand_to_eol' in mdargs:
+			for r in view.sel():
+				treg = sublime.Region(r.begin(), view.line(r).end())
 
-			settings = sublime.load_settings("ExpandRegion.sublime-settings")
-			do_force_enable_soft_undo = settings.get("force_soft_undo_integration")
-			if do_force_enable_soft_undo:
-				_force_enable_soft_undo(view, edit, new_regions)
-			return
+				# On first expansion, strip trailing [\s\t]
+				for l in view.split_by_newlines(treg):
+					sfreg = sublime.Region(l.begin(), 
+						l.end() - len(re.findall('[\s\t]+$', view.substr(l))[0]))
+					new_regions.append(sfreg)
 
+			# Compare if current selection is equal to new_regions.
+			# If true, this is the second hit of expand_to_eol! -> do NOT strip whitespaces
+			if new_regions == view.sel():
+				new_regions = []
+				[new_regions.append(
+					sublime.Region(r.begin(), view.line(r).end())
+					) for r in view.sel()]
 
-		for region in view.sel():
-			string = view.substr(sublime.Region(0, view.size()))
-			start = region.begin()
-			end = region.end()
+		else:
+			for region in view.sel():
+				string = view.substr(sublime.Region(0, view.size()))
+				start = region.begin()
+				end = region.end()
 
-			result = expand_region_handler.expand(string, start, end, language, view.settings())
-			if result:
-				new_regions.append(sublime.Region(result["start"], result["end"]))
-				if debug:
-					print("startIndex: {0}, endIndex: {1}, type: {2}".format(result["start"], result["end"], result["type"]))
-			else:
-				# if there is no result, keep the current region
-				new_regions.append(region)
+				result = expand_region_handler.expand(string, start, end, language, view.settings())
+				if result:
+					new_regions.append(sublime.Region(result["start"], result["end"]))
+					if debug:
+						print("startIndex: {0}, endIndex: {1}, type: {2}".format(result["start"], result["end"], result["type"]))
+				else:
+					# if there is no result, keep the current region
+					new_regions.append(region)
 
 		# replace the selections with the new regions
 		view.sel().clear()
