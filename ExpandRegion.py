@@ -48,9 +48,11 @@ def _detect_language(view, settings_name):
 	language = scored_lang if score else ""
 	return language
 
+from pprint import pprint as pp
+from mdLibs import mdosd as osd
 
 class ExpandRegionCommand(sublime_plugin.TextCommand):
-	def run(self, edit, language="", undo=False, debug=True, mdargs=None):
+	def run(self, edit, language="", undo=False, debug=False, mdargs=[]):
 		view = self.view
 
 		if (undo):
@@ -71,15 +73,25 @@ class ExpandRegionCommand(sublime_plugin.TextCommand):
 
 		new_regions = []
 
-		if 'expand_line' in mdargs:
+		if 'expand_line' in mdargs: 
 			[new_regions.append(view.line(reg)) for reg in view.sel()]
 
 			# If equal region, expand to next/prev line
 			for k in range(len(new_regions)):
-				if view.sel()[k] == new_regions[k]:
+				if view.sel()[k] == new_regions[k]: 
 					new_regions[k] = view.line(sublime.Region(
 						new_regions[k].begin() - int('backward' in mdargs),
 						new_regions[k].end()+ int('forward' in mdargs)))
+
+		elif 'expand_line_strip_lr' in mdargs: 
+			lregs = []
+			[lregs.append(view.line(reg)) for reg in view.sel()]
+			unsel = expand_leading_whitespace(view)
+
+			for k in range(len(lregs)):
+				new_regions.append(sorted(region_subtract(
+					subRegion=unsel[k], region=lregs[k]), reverse=True)[0])
+			# return
 
 		elif 'expand_to_eol' in mdargs:
 			for r in view.sel():
@@ -127,6 +139,37 @@ class ExpandRegionCommand(sublime_plugin.TextCommand):
 		if do_force_enable_soft_undo:
 			_force_enable_soft_undo(view, edit, new_regions)
 
+def region_subtract(subRegion, region):
+    # r = sublime.Region(region[0], region[1])
+    # sr = sublime.Region(subRegion[0], subRegion[1])
+    r = region
+    sr = subRegion
+
+    if not r.contains(sr):
+        dprint("Region " + str(subRegion) + " is not a subregion of " + str(region))
+        return
+
+    regs = [
+    sublime.Region(r.begin(), sr.begin() - 1), 
+    sublime.Region(sr.end(), r.end())
+    ]
+    return regs
+        
+def expand_leading_whitespace(view):
+	whsrs = []
+	for s in view.sel():
+		s = sublime.Region(view.line(s).begin())
+		whsrs.append( sublime.Region( 
+			s.begin(), view.expand_by_class(s.begin(),
+				sublime.CLASS_LINE_START |
+				sublime.CLASS_WORD_START |
+				sublime.CLASS_PUNCTUATION_START |
+				sublime.CLASS_EMPTY_LINE).end()))
+
+	# view.sel().clear()
+	# view.sel().add_all(whsrs)
+
+	return whsrs
 
 class ExpandRegionContext(sublime_plugin.EventListener):
 		def on_query_context(self, view, key, *args):
