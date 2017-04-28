@@ -140,32 +140,37 @@ class ExpandRegionCommand(sublime_plugin.TextCommand):
 			_force_enable_soft_undo(view, edit, new_regions)
 
 def region_subtract(subRegion, region):
-    # r = sublime.Region(region[0], region[1])
-    # sr = sublime.Region(subRegion[0], subRegion[1])
-    r = region
-    sr = subRegion
+	# r = sublime.Region(region[0], region[1])
+	# sr = sublime.Region(subRegion[0], subRegion[1])
+	r = region
+	sr = subRegion
 
-    if not r.contains(sr):
-        dprint("Region " + str(subRegion) + " is not a subregion of " + str(region))
-        return
+	if sr.size() == 0:
+		return (sublime.Region(r.begin(), r.end()),
+			sublime.Region(r.begin(), r.end()))
 
-    regs = [
-    sublime.Region(r.begin(), sr.begin() - 1), 
-    sublime.Region(sr.end(), r.end())
-    ]
-    return regs
-        
-def expand_leading_whitespace(view):
+
+	if not r.contains(sr):
+		print("Region " + str(subRegion) + " is not a subregion of " + str(region))
+		return
+
+	return ( sublime.Region(r.begin(), sr.begin() - 1),
+		sublime.Region(sr.end(), r.end()))
+		
+def expand_leading_whitespace(view, delims=[' ', '\t']):
 	whsrs = []
-	for s in view.sel():
-		s = sublime.Region(view.line(s).begin())
-		whsrs.append( sublime.Region( 
-			s.begin(), view.expand_by_class(s.begin(),
-				sublime.CLASS_LINE_START |
-				sublime.CLASS_WORD_START |
-				sublime.CLASS_PUNCTUATION_START |
-				sublime.CLASS_EMPTY_LINE).end()))
-
+	for s_ in view.sel():
+		s = sublime.Region(view.line(s_).begin())
+		print("view.substr(s.begin()):", view.substr(s.begin()))
+		if view.substr(s.begin()) in delims:
+			whsrs.append( sublime.Region( 
+				s.begin(), view.expand_by_class(s.begin(),
+					sublime.CLASS_LINE_START |
+					sublime.CLASS_WORD_START |
+					sublime.CLASS_PUNCTUATION_START |
+					sublime.CLASS_EMPTY_LINE).end()))
+		else:
+			whsrs.append(sublime.Region(0,0))
 	# view.sel().clear()
 	# view.sel().add_all(whsrs)
 
