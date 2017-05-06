@@ -68,8 +68,8 @@ class ExpandRegionCommand(sublime_plugin.TextCommand):
 		if not language:
 			language = (_detect_language(view, "ExpandRegion") or
 									_detect_language(view, "ExpandRegionFallback"))
-		if debug:
-			print("Determined language: '{0}'".format(language))
+		# if debug:
+			# print("Determined language: '{0}'".format(language))
 
 		new_regions = []
 
@@ -123,8 +123,8 @@ class ExpandRegionCommand(sublime_plugin.TextCommand):
 				result = expand_region_handler.expand(string, start, end, language, view.settings())
 				if result:
 					new_regions.append(sublime.Region(result["start"], result["end"]))
-					if debug:
-						print("startIndex: {0}, endIndex: {1}, type: {2}".format(result["start"], result["end"], result["type"]))
+					# if debug:
+						# print("startIndex: {0}, endIndex: {1}, type: {2}".format(result["start"], result["end"], result["type"]))
 				else:
 					# if there is no result, keep the current region
 					new_regions.append(region)
@@ -149,7 +149,6 @@ def region_subtract(subRegion, region):
 		return (sublime.Region(r.begin(), r.end()),
 			sublime.Region(r.begin(), r.end()))
 
-
 	if not r.contains(sr):
 		print("Region " + str(subRegion) + " is not a subregion of " + str(region))
 		return
@@ -161,7 +160,7 @@ def expand_leading_whitespace(view, delims=[' ', '\t']):
 	whsrs = []
 	for s_ in view.sel():
 		s = sublime.Region(view.line(s_).begin())
-		print("view.substr(s.begin()):", view.substr(s.begin()))
+		# print("view.substr(s.begin()):", view.substr(s.begin()))
 		if view.substr(s.begin()) in delims:
 			whsrs.append( sublime.Region( 
 				s.begin(), view.expand_by_class(s.begin(),
@@ -177,10 +176,10 @@ def expand_leading_whitespace(view, delims=[' ', '\t']):
 	return whsrs
 
 class ExpandRegionContext(sublime_plugin.EventListener):
-		def on_query_context(self, view, key, *args):
-			if key == "expand_region_soft_undo":
-				item = view.command_history(0)
-				if item[0] == "expand_region":
-					return True
+	def on_query_context(self, view, key, *args):
+		if key == "expand_region_soft_undo":
+			item = view.command_history(0)
+			if item[0] == "expand_region":
+				return True
 
-			return None
+				return None

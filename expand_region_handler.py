@@ -11,7 +11,7 @@ except:
   from . import latex
   from . import python
 
-def expand(string, start, end, language="", settings=None):
+def expand(string, start, end, language="", settings=None, debug=False):
 
   if language == "html":
     result = html.expand(string, start, end)
@@ -25,22 +25,23 @@ def expand(string, start, end, language="", settings=None):
   if (result != None and settings):
     expand_region_settings = settings.get("expand_region_settings")
     newSettingsJson = add_to_stack(expand_region_settings, string.encode('utf-8'), result.get("start"), result.get("end"), start, end)
-    print(newSettingsJson)
+    if debug:
+      print(newSettingsJson)
     settings.set("expand_region_settings", newSettingsJson)
 
   return result;
 
-def undo(string, start, end, settings=None):
+def undo(string, start, end, settings=None, debug=False):
 
   if (settings):
     expand_region_settings = settings.get("expand_region_settings")
     result = get_last_selection(expand_region_settings, string.encode('utf-8'), start, end)
-    print(result.get("newSettingsJson"))
+    if debug:
+      print(result.get("newSettingsJson"))
     settings.set("expand_region_settings", result.get("newSettingsJson"))
     if (result.get("newSelection") == None):
       return None
     return {"start": result.get("newSelection").get("startIndex"), "end": result.get("newSelection").get("endIndex")}
-
 
 def add_to_stack(settingsJson, string, startIndex, endIndex, oldStartIndex, oldEndIndex):
   if (settingsJson == "" or settingsJson == None):
